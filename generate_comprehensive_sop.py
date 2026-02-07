@@ -18,13 +18,13 @@ def clean_text(text):
     text = re.sub(r'\s+', ' ', text)
     return text
 
-def extract_docx_content_detailed(docx_path):
+def extract_docx_content_detailed(docx_path, friendly_title=None):
     """Extract detailed structured content from a DOCX file"""
     try:
         doc = Document(docx_path)
         content = {
             'filename': os.path.basename(docx_path),
-            'title': '',
+            'title': friendly_title or '',  # Use friendly title if provided
             'sections': []
         }
         
@@ -66,10 +66,7 @@ def extract_docx_content_detailed(docx_path):
                 }
             else:
                 # Regular content
-                if not content['title'] and lines_processed <= 5 and len(text) > 15:
-                    # First substantial line might be the title
-                    content['title'] = text
-                elif current_section is not None:
+                if current_section is not None:
                     current_section['content'].append(text)
                 else:
                     # No section yet, create one
@@ -83,7 +80,7 @@ def extract_docx_content_detailed(docx_path):
         if current_section:
             content['sections'].append(current_section)
         
-        # Extract title from filename if not found
+        # Extract title from filename if still not found
         if not content['title']:
             fname = os.path.basename(docx_path).replace('.docx', '')
             # Clean up filename
@@ -95,7 +92,7 @@ def extract_docx_content_detailed(docx_path):
         
     except Exception as e:
         print(f"  Error reading {docx_path}: {e}")
-        fname = os.path.basename(docx_path).replace('.docx', '').replace('_', ' ')
+        fname = friendly_title or os.path.basename(docx_path).replace('.docx', '').replace('_', ' ')
         return {'filename': fname, 'title': fname, 'sections': []}
 
 def add_content_slide_with_template_style(prs, title, bullet_points):
@@ -269,7 +266,7 @@ def main():
         filepath = f"/home/runner/work/SOP/SOP/{filename}"
         if os.path.exists(filepath):
             print(f"   • {friendly_name}...")
-            content = extract_docx_content_detailed(filepath)
+            content = extract_docx_content_detailed(filepath, friendly_title=friendly_name)
             create_slides_for_sop(prs, content, num_slides=2)
         else:
             print(f"   ⚠ {filename} not found")
@@ -280,7 +277,7 @@ def main():
         filepath = f"/home/runner/work/SOP/SOP/{filename}"
         if os.path.exists(filepath):
             print(f"   • {friendly_name}...")
-            content = extract_docx_content_detailed(filepath)
+            content = extract_docx_content_detailed(filepath, friendly_title=friendly_name)
             create_summary_slide_for_sop(prs, content)
         else:
             print(f"   ⚠ {filename} not found")
